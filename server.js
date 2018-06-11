@@ -23,47 +23,57 @@ const KONTRASKJAERET = {
   lon: 10.736276,
 };
 
+let weatherData = {};
+let lastTimeDataWasFetched = new Date(0);
+
 app.get("/api/weather", (req, res) => {
-  let dateString = req.query.time;
-  let date = new Date(dateString);
+  let time = new Date(req.query.time);
   if (
-    !dateString ||
-    Object.prototype.toString.call(date) !== "[object Date]" ||
-    isNaN(date.getTime())
+    !req.query.time ||
+    Object.prototype.toString.call(time) !== "[object Date]" ||
+    isNaN(time.getTime())
   ) {
-    // res
-    //   .status(504)
-    //   .send(
-    //     "APIet krever at en gyldig datostreng blir sendt med requesten på dette formatet: /api/weather?date=2018-06-19T21:00:00+03:00",
-    //   );
-    date = new Date("2018-06-12T13:00:00Z");
+    res
+      .status(504)
+      .send(
+        "APIet krever at en gyldig datostreng blir sendt med requesten på dette formatet: /api/weather?date=2018-06-19T21:00:00+03:00",
+      );
   }
-  yrno
-    .getWeather(KONTRASKJAERET)
-    .then(weather => {
-      let forecastArray = Object.values(weather.times);
-      if (
-        date < new Date(forecastArray[0].from) ||
-        date > new Date(forecastArray[forecastArray.length - 1].from)
-      ) {
-        res.send({});
-        return;
-      }
-      let forecast = forecastArray.reduce((acc, val) => {
-        if (date >= new Date(val.from)) {
-          return val;
-        }
-        return acc;
-      }, {});
-      forecast.symbolUrl = getSymbolUrl(forecast.symbolNumber);
-      res.send(forecast);
-      return;
-    })
-    .catch(e => {
-      console.log(e);
-      res.status(500).send(e);
-    });
+  if (new Date() - lastTimeDataWasFetched > 180000) {
+    yrno
+      .getWeather(KONTRASKJAERET)
+      .then(weather => {
+        lastTimeDataWasFetched = new Date();
+        weatherData = weather;
+        respondToRequestForWeather(weatherData, time, res);
+      })
+      .catch(err => {
+        console.log(err);
+        res.status(500).send(err);
+      });
+  } else {
+    respondToRequestForWeather(weatherData, time, res);
+  }
 });
+
+function respondToRequestForWeather(weather, forecastTime, res) {
+  let forecastArray = Object.values(weather.times);
+  if (
+    forecastTime < new Date(forecastArray[0].from) ||
+    forecastTime > new Date(forecastArray[forecastArray.length - 1].from)
+  ) {
+    res.send({});
+    return;
+  }
+  let forecast = forecastArray.reduce((acc, val) => {
+    if (forecastTime >= new Date(val.from)) {
+      return val;
+    }
+    return acc;
+  }, {});
+  forecast.symbolUrl = getSymbolUrl(forecast.symbolNumber);
+  res.send(forecast);
+}
 
 function getSymbolUrl(symbolNumber) {
   let symbolString = String(symbolNumber);
