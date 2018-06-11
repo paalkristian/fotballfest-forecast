@@ -12,6 +12,6 @@
   "dependencies": {
     "express": "^4.16.3",
     "object.values": "^1.0.4",
-    "yr.no-forecast": "git+https://github.com/paalkristian/yr.no-forecast"
+    "yr.no-forecast": "git+https://github.com/paalkristian/yr.no-forecast#2.1.1"
   }
 }
