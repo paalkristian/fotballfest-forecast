@@ -33,11 +33,13 @@ app.get("/api/weather", (req, res) => {
     Object.prototype.toString.call(time) !== "[object Date]" ||
     isNaN(time.getTime())
   ) {
+    const tomorrowAtThisTime = new Date(new Date().setDate(new Date().getDate()+1)).toISOString();
     res
       .status(504)
       .send(
-        "APIet krever at en gyldig datostreng blir sendt med requesten på dette formatet: /api/weather?date=2018-06-19T21:00:00+03:00",
+        `APIet krever at en gyldig datostreng blir sendt med requesten på dette formatet: /api/weather?time=${tomorrowAtThisTime}`,
       );
+      return;
   }
   if (new Date() - lastTimeDataWasFetched > 180000) {
     yrno
@@ -50,6 +52,7 @@ app.get("/api/weather", (req, res) => {
       .catch(err => {
         console.log(err);
         res.status(500).send(err);
+        return;
       });
   } else {
     respondToRequestForWeather(weatherData, time, res);
